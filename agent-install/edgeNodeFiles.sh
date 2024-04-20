@@ -263,6 +263,19 @@ function cleanUpPreviousFiles() {
     echo
 }
 
+# Get version from the manifest.json, will create a file {f}_manifest.json for next runs
+function getTarPackageVersion() {
+    local f="$1"
+    if [[ -z $f ]]; then
+        echo ""
+        return
+    fi
+    tar -zxf "${f}" manifest.json
+    mv manifest.json "${f}_manifest.json"
+    local version=$(cat "${f}_manifest.json" | jq -r '.[0].RepoTags[0]')   # this gets the full path
+    echo "${version##*:}"   # strip the path and image name from the front
+}
+
 # Pull the edge cluster agent image from the package tar file or from a docker registry
 function getAgentK8sImageTarFile() {
     local upgradeFiles=$1
@@ -295,12 +308,9 @@ function getAgentK8sImageTarFile() {
         fi
 
         if [[ $PUT_FILES_IN_CSS == 'true' ]]; then
-            echo "Extracting version from ${the_k8s_image_tar_file} ..."
-            local version=$(tar -zxOf "${the_k8s_image_tar_file}" manifest.json | jq -r '.[0].RepoTags[0]')   # this gets the full path
-            version=${version##*:}   # strip the path and image name from the front
-            echo "Version/tag of ${the_k8s_image_tar_file} is: $version"
+            local version=$(getTarPackageVersion "${the_k8s_image_tar_file}")
             putOneFileInCss "${the_k8s_image_tar_file}" agent_files false $version
-            putOneFileInCss "${the_k8s_image_tar_file}" "agent_software_files-${version}"  true  ${version}
+            putOneFileInCss "${the_k8s_image_tar_file}" "agent_software_files-${version}" true ${version}
 
             addElementToArray $upgradeFiles ${the_k8s_image_tar_file}
         fi
@@ -340,12 +350,9 @@ function getAutoUpgradeCronjobK8sImageTarFile() {
         fi
 
         if [[ $PUT_FILES_IN_CSS == 'true' ]]; then
-            echo "Extracting version from ${the_k8s_cronjob_image_tar_file} ..."
-            local version=$(tar -zxOf "${the_k8s_cronjob_image_tar_file}" manifest.json | jq -r '.[0].RepoTags[0]')   # this gets the full path
-            version=${version##*:}   # strip the path and image name from the front
-            echo "Version/tag of ${the_k8s_cronjob_image_tar_file} is: $version"
+            local version=$(getTarPackageVersion "${the_k8s_cronjob_image_tar_file}")
             putOneFileInCss "${the_k8s_cronjob_image_tar_file}" agent_files false $version
-            putOneFileInCss "${the_k8s_cronjob_image_tar_file}" "agent_software_files-${version}"  true  ${version}
+            putOneFileInCss "${the_k8s_cronjob_image_tar_file}" "agent_software_files-${version}" true ${version}
 
             addElementToArray $upgradeFiles ${the_k8s_cronjob_image_tar_file}
         fi
@@ -791,10 +798,11 @@ function getHorizonPackageFiles() {
         else
                 put_ARCH=$arch
         fi
+        the_file="${put_ARCH}${AGENT_IMAGE_TAR_FILE}"
 
         if [[ $AGENT_IMAGES_FROM_TAR == 'true' ]]; then
-            tar --strip-components 2 -zxf $PACKAGE_NAME.tar.gz "$pkgBaseName/docker/${put_ARCH}${AGENT_IMAGE_TAR_FILE}"
-            chk $? "extracting $pkgBaseName/docker/${put_ARCH}${AGENT_IMAGE_TAR_FILE} from $PACKAGE_NAME.tar.gz"
+            tar --strip-components 2 -zxf $PACKAGE_NAME.tar.gz "$pkgBaseName/docker/${the_file}"
+            chk $? "extracting $pkgBaseName/docker/${the_file} from $PACKAGE_NAME.tar.gz"
         else
             if [[ ($PULL_REGISTRY != $DEFAULT_PULL_REGISTRY) && ($ALREADY_LOGGED_INTO_REGISTRY == 'false') ]]; then
                 echo "Logging into $PULL_REGISTRY ..."
@@ -808,20 +816,16 @@ function getHorizonPackageFiles() {
             chk $? "pulling $PULL_REGISTRY/${put_ARCH}${AGENT_IMAGE}:$AGENT_IMAGE_TAG"
 
             echo "Saving ${put_ARCH}${AGENT_IMAGE}:$AGENT_IMAGE_TAG to ${put_ARCH}$AGENT_IMAGE_TAR_FILE ..."
-            docker save $PULL_REGISTRY/${put_ARCH}${AGENT_IMAGE}:$AGENT_IMAGE_TAG | gzip > ${put_ARCH}${AGENT_IMAGE_TAR_FILE}
+            docker save $PULL_REGISTRY/${put_ARCH}${AGENT_IMAGE}:$AGENT_IMAGE_TAG | gzip > ${the_file}
             chk $? "saving $PULL_REGISTRY/${put_ARCH}${AGENT_IMAGE}:$AGENT_IMAGE_TAG"
         fi
 
         if [[ $PUT_FILES_IN_CSS == 'true' ]]; then
+            local version=$(getTarPackageVersion "${the_file}")
+            putOneFileInCss "${the_file}" agent_files false $version
+            putOneFileInCss "${the_file}" "agent_software_files-${version}" true $version
 
-            echo "Extracting version from ${put_ARCH}${AGENT_IMAGE_TAR_FILE} ..."
-            local version=$(tar -zxOf "${put_ARCH}${AGENT_IMAGE_TAR_FILE}" manifest.json | jq -r '.[0].RepoTags[0]')   # this gets the full path
-            version=${version##*:}   # strip the path and image name from the front
-            echo "Version/tag of ${put_ARCH}${AGENT_IMAGE_TAR_FILE} is: $version"
-            putOneFileInCss "${put_ARCH}${AGENT_IMAGE_TAR_FILE}" agent_files false $version
-            putOneFileInCss "${put_ARCH}${AGENT_IMAGE_TAR_FILE}" "agent_software_files-${version}" true $version
-
-            addElementToArray $softwareFiles "${put_ARCH}${AGENT_IMAGE_TAR_FILE}"
+            addElementToArray $softwareFiles "${the_file}"
         fi
     fi
 }
