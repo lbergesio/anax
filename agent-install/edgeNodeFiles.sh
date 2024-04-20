@@ -230,7 +230,7 @@ function setMgmtHubURLs() {
 }
 
 # Method to store the software package version if it is not set yet
-function setSoftwarePackageVersion() { 
+function setSoftwarePackageVersion() {
 
        if [[ ! $1 == '' ]] && [[ "${SOFTWARE_PACKAGE_VERSION}" == "0" ]]; then
 	       SOFTWARE_PACKAGE_VERSION=$1
@@ -238,7 +238,7 @@ function setSoftwarePackageVersion() {
 }
 
 # Utility method to add an element to an array
-function addElementToArray() { 
+function addElementToArray() {
        var="$1"
        shift 1
        eval "$var+=($(printf "'%s' " "$@"))"
@@ -375,13 +375,13 @@ function putOneFileInCss() {
     echo "Publishing $filename as type $objectType in CSS as a public object in the IBM org..."
 
     # Build meta-data
-    local META_DATA=$(jq --null-input --arg org IBM --arg ID $filename --arg TYPE $objectType '{objectID: $ID, objectType: $TYPE, destinationOrgID: $org}' | jq --argjson SET_TRUE true '. + {public: $SET_TRUE}') 
+    local META_DATA=$(jq --null-input --arg org IBM --arg ID $filename --arg TYPE $objectType '{objectID: $ID, objectType: $TYPE, destinationOrgID: $org}' | jq --argjson SET_TRUE true '. + {public: $SET_TRUE}')
 
-    if [ ! -z ${version} ]; then 
-	    META_DATA=$( echo "${META_DATA}" | jq --arg VERSION ${version} '. + {version: $VERSION}' ) 
-    fi 
+    if [ ! -z ${version} ]; then
+	    META_DATA=$( echo "${META_DATA}" | jq --arg VERSION ${version} '. + {version: $VERSION}' )
+    fi
 
-    if [[ $addExpiration == true ]]; then 
+    if [[ $addExpiration == true ]]; then
         local exp_time=''
         getExpirationTime exp_time
         if [[ ! "${exp_time}" == "0" ]]; then
@@ -409,14 +409,14 @@ function getExpirationTime() {
             if [[ ${#EXPIRATION_TIME} -gt 0  ]]; then
                 EXP_TIME="${EXPIRATION_TIME}"
             fi
-        else   # linux (deb or rpm) 
+        else   # linux (deb or rpm)
             local EXPIRATION_TIME=$( date -u -d "+${AGENT_FILES_EXPIRATION} days" +"%Y-%m-%dT%H:%M:%S.00Z" )
             if [[ ${#EXPIRATION_TIME} -gt 0  ]]; then
                 EXP_TIME="${EXPIRATION_TIME}"
             fi
         fi
     fi
-    
+
     eval $__resultvar="'$EXP_TIME'"
 }
 
@@ -452,7 +452,7 @@ function getAgentFileTotal() {
 
     if [ "$num" != "0" ]; then
         if [[ $PUT_FILES_IN_CSS == 'true' ]]; then
-            local META_DATA=$(jq --null-input --arg org IBM --arg ID total --arg TYPE $objectType --arg VERSION ${ver_in} --arg TOTAL $num '{objectID: $ID, objectType: $TYPE, destinationOrgID: $org, version: $VERSION, description: $TOTAL}' | jq --argjson SET_TRUE true '. + {public: $SET_TRUE, noData: $SET_TRUE}') 
+            local META_DATA=$(jq --null-input --arg org IBM --arg ID total --arg TYPE $objectType --arg VERSION ${ver_in} --arg TOTAL $num '{objectID: $ID, objectType: $TYPE, destinationOrgID: $org, version: $VERSION, description: $TOTAL}' | jq --argjson SET_TRUE true '. + {public: $SET_TRUE, noData: $SET_TRUE}')
             local exp_time=''
             getExpirationTime exp_time
             if [[ ! "${exp_time}" == "0" ]]; then
@@ -470,20 +470,20 @@ function getAgentFileTotal() {
 
 # Utility file to see if the objectType and objectID already exist in CSS
 function test_IsFileInCss() {
-	local org=$1 objectType=$2 objectID=$3 
+	local org=$1 objectType=$2 objectID=$3
 
 	local USER_AUTH=${HZN_EXCHANGE_USER_AUTH}
 
         # First get exchange root creds, if necessary
-        if [[ -z ${USER_AUTH} ]]; then 
+        if [[ -z ${USER_AUTH} ]]; then
 	        resourcename=$(oc get eamhub --no-headers |awk '{printf $1}')
-		USER_AUTH="root/root:$(oc get secret $resourcename-auth -o jsonpath="{.data.exchange-root-pass}" | base64 --decode)" 
+		USER_AUTH="root/root:$(oc get secret $resourcename-auth -o jsonpath="{.data.exchange-root-pass}" | base64 --decode)"
 		chk $? 'getting exchange root creds'
         fi
-	
-	objects=$( hzn mms object list -u ${USER_AUTH} -o ${org} -t ${objectType}  -i ${objectID} | grep -v "Listing"  | jq '. | length' ) 
-	rc=$?  
-	if [[ $rc -eq 0  && $objects -gt 0 ]]; then 
+
+	objects=$( hzn mms object list -u ${USER_AUTH} -o ${org} -t ${objectType}  -i ${objectID} | grep -v "Listing"  | jq '. | length' )
+	rc=$?
+	if [[ $rc -eq 0  && $objects -gt 0 ]]; then
 		true
 		return
 	else
@@ -494,7 +494,7 @@ function test_IsFileInCss() {
 
 # Add specific stanzas to manifest
 manifestAppendUpgradeStanza() {
- 
+
         local __resultvar=$1
 
         manifestJson=$2
@@ -537,8 +537,8 @@ function manifestBuildUpgrade()  {
         local myresult=''
 
         JSON=$1
-        shift 
-	
+        shift
+
         local filesToUpgrade=("${@}")
 
         local tmpJson="${JSON}"
@@ -554,7 +554,7 @@ function manifestBuildUpgrade()  {
 function manifestAddTypeStanza() {
 
     local __resultvar=$1
-    shift 
+    shift
 
     upgradeManifest=$1
     shift
@@ -592,12 +592,12 @@ function createAgentInstallConfig () {
     HUB_CERT_PATH="agent-install.crt"
 
     local doUploadConfig='true'
-    local doUploadConfig_versioned='true' 
+    local doUploadConfig_versioned='true'
 
     if [[ $PUT_FILES_IN_CSS == 'true' ]]; then
             # Only upload cert if it doesn't exist in CSS.. ie. fresh install
-            if test_IsFileInCss "IBM"  "agent_files" "agent-install.cfg"; then 
-	        doUploadConfig='false' 
+            if test_IsFileInCss "IBM"  "agent_files" "agent-install.cfg"; then
+	        doUploadConfig='false'
             fi
 
             if test_IsFileInCss "IBM"  "agent_config_files-1.0.0" "agent-install.cfg"; then
@@ -605,11 +605,11 @@ function createAgentInstallConfig () {
             fi
     fi
 
-    if [[ $PUT_FILES_IN_CSS != 'true' || ${doUploadConfig} == 'true' || ${doUploadConfig_versioned} == 'true' ]]; then 
-	    
-	    if [[ $EDGE_NODE_TYPE == 'x86_64-Cluster' || $EDGE_NODE_TYPE == 'ppc64le-Cluster' || $EDGE_NODE_TYPE == 'ALL' ]]; then   # if they chose ALL, the cluster agent-install.cfg is a superset 
+    if [[ $PUT_FILES_IN_CSS != 'true' || ${doUploadConfig} == 'true' || ${doUploadConfig_versioned} == 'true' ]]; then
 
-		    cat << EndOfContent > agent-install.cfg 
+	    if [[ $EDGE_NODE_TYPE == 'x86_64-Cluster' || $EDGE_NODE_TYPE == 'ppc64le-Cluster' || $EDGE_NODE_TYPE == 'ALL' ]]; then   # if they chose ALL, the cluster agent-install.cfg is a superset
+
+		    cat << EndOfContent > agent-install.cfg
 HZN_EXCHANGE_URL=${HZN_EXCHANGE_URL}
 HZN_FSS_CSSURL=${HZN_FSS_CSSURL}
 HZN_AGBOT_URL=${HZN_AGBOT_URL}
@@ -617,15 +617,15 @@ HZN_FDO_SVC_URL=${HZN_FDO_SVC_URL}
 AGENT_NAMESPACE=${AGENT_NAMESPACE}
 EndOfContent
 
-        	      	# Only include these if they are not empty 
-			if [[ -n $EDGE_CLUSTER_STORAGE_CLASS ]]; then 
-				echo "EDGE_CLUSTER_STORAGE_CLASS=$EDGE_CLUSTER_STORAGE_CLASS" >> agent-install.cfg 
-			fi 
-			if [[ -n $ORG_ID ]]; then 
-				echo "HZN_ORG_ID=$ORG_ID" >> agent-install.cfg 
-			fi 
-		
-		else   # device 
+        	      	# Only include these if they are not empty
+			if [[ -n $EDGE_CLUSTER_STORAGE_CLASS ]]; then
+				echo "EDGE_CLUSTER_STORAGE_CLASS=$EDGE_CLUSTER_STORAGE_CLASS" >> agent-install.cfg
+			fi
+			if [[ -n $ORG_ID ]]; then
+				echo "HZN_ORG_ID=$ORG_ID" >> agent-install.cfg
+			fi
+
+		else   # device
 
 			cat << EndOfContent > agent-install.cfg
 HZN_EXCHANGE_URL=${HZN_EXCHANGE_URL}
@@ -646,11 +646,11 @@ EndOfContent
     fi
 
     if [[ $PUT_FILES_IN_CSS == 'true' ]]; then
-    	if [[ ${doUploadConfig} == 'true'  ]]; then 
+    	if [[ ${doUploadConfig} == 'true'  ]]; then
             putOneFileInCss agent-install.cfg agent_files false
 	    fi
 
-    	if [[ ${doUploadConfig_versioned} == 'true'  ]]; then 
+    	if [[ ${doUploadConfig_versioned} == 'true'  ]]; then
             putOneFileInCss agent-install.cfg  "agent_config_files-1.0.0" false "1.0.0"
             addElementToArray $upgradeFiles  "agent-install.cfg"
 	   fi
@@ -683,11 +683,11 @@ function getClusterCert () {
             fi
 
             local doUploadCert='true'
-            local doUploadCert_versioned='true' 
+            local doUploadCert_versioned='true'
             # Only upload cert if it doesn't exist in CSS.. ie. fresh install
             if [[ $PUT_FILES_IN_CSS == 'true' ]]; then
-                    if test_IsFileInCss "IBM"  "agent_files" "agent-install.crt"; then 
-                            doUploadCert='false' 
+                    if test_IsFileInCss "IBM"  "agent_files" "agent-install.crt"; then
+                            doUploadCert='false'
                     fi
 
                     if  test_IsFileInCss "IBM"  "agent_cert_files-1.0.0" "agent-install.crt"; then
@@ -696,13 +696,13 @@ function getClusterCert () {
             fi
 
             if [[ $PUT_FILES_IN_CSS == 'true' ]]; then
-                    if [[ ${doUploadCert} == 'true' ]]; then 
+                    if [[ ${doUploadCert} == 'true' ]]; then
                             putOneFileInCss agent-install.crt agent_files false
                     fi
 
-                    if [[ ${doUploadCert_versioned} == 'true' ]]; then 
-                            putOneFileInCss agent-install.crt  "agent_cert_files-1.0.0" false  "1.0.0"
-                            addElementToArray $upgradeFiles  "agent-install.crt"
+                    if [[ ${doUploadCert_versioned} == 'true' ]]; then
+                            putOneFileInCss agent-install.crt "agent_cert_files-1.0.0" false "1.0.0"
+                            addElementToArray $upgradeFiles "agent-install.crt"
                     fi
             fi
     else
@@ -735,7 +735,7 @@ function putHorizonPkgsInCss() {
     elif [[ $opsys == 'macos' ]]; then
         tarFile="horizon-agent-${opsys}-${pkgtype}-$arch.tar.gz"
         # mac pkg might be *.$arch.$pkgtype or just *.$pkgtype
-        ls horizon-cli-*.$arch.$pkgtype > /dev/null 2>&1 
+        ls horizon-cli-*.$arch.$pkgtype > /dev/null 2>&1
         if [[ $? -eq 0 ]]; then
             pkgWildcard="horizon-cli.crt horizon-cli-*.$arch.$pkgtype"
             pkgVersion=$(ls horizon-cli-*.$arch.$pkgtype)
@@ -758,14 +758,14 @@ function putHorizonPkgsInCss() {
     local doUploadPkgs_versioned='true'
 
     # Put the tar file in CSS in the IBM org as a public object
-    if [[ ${doUploadPkgs} == 'true' ]]; then 
+    if [[ ${doUploadPkgs} == 'true' ]]; then
         putOneFileInCss $tarFile "agent_files" false $pkgVersion
     fi
-    if [[ ${doUploadPkgs_versioned} == 'true' ]]; then 
+    if [[ ${doUploadPkgs_versioned} == 'true' ]]; then
         putOneFileInCss $tarFile "agent_software_files-${pkgVersion}" true $pkgVersion
 
         # Add the tarFile name array for the manifest
-        addElementToArray $horizonSoftwareFiles $tarFile 
+        addElementToArray $horizonSoftwareFiles $tarFile
 
         # Will set the software package version if not set yet
         setSoftwarePackageVersion ${pkgVersion}
@@ -1011,18 +1011,18 @@ all_main() {
     getAgentK8sImageTarFile upgradeSoftwareFiles
     getAutoUpgradeCronjobK8sImageTarFile upgradeSoftwareFiles
 
-    local upgradeConfigFiles=()    
+    local upgradeConfigFiles=()
     createAgentInstallConfig upgradeConfigFiles
 
     configFileLength=${#upgradeConfigFiles[@]}
-    if [[ $configFileLength -gt 0 ]]; then 
+    if [[ $configFileLength -gt 0 ]]; then
 	    manifestAddTypeStanza mymainresult "${mymainresult}" "configurationUpgrade" "1.0.0" "${upgradeConfigFiles[@]}"
     fi
 
-    local upgradeCertFiles=()    
+    local upgradeCertFiles=()
     getClusterCert upgradeCertFiles
     certFileLength=${#upgradeCertFiles[@]}
-    if [[ $certFileLength -gt 0 ]]; then 
+    if [[ $certFileLength -gt 0 ]]; then
 	    manifestAddTypeStanza mymainresult "${mymainresult}" "certificateUpgrade" "1.0.0" "${upgradeCertFiles[@]}"
     fi
 
@@ -1032,7 +1032,7 @@ all_main() {
 
     getAgentInstallScript upgradeSoftwareFiles
     softwareFileLength=${#upgradeSoftwareFiles[@]}
-    if [[ $softwareFileLength -gt 0 ]]; then 
+    if [[ $softwareFileLength -gt 0 ]]; then
 	    manifestAddTypeStanza mymainresult "${mymainresult}" "softwareUpgrade" "${SOFTWARE_PACKAGE_VERSION}" "${upgradeSoftwareFiles[@]}"
     fi
 
@@ -1066,18 +1066,18 @@ cluster_main() {
     getAgentK8sImageTarFile upgradeSoftwareFiles
     getAutoUpgradeCronjobK8sImageTarFile upgradeSoftwareFiles
 
-    local upgradeConfigFiles=()    
+    local upgradeConfigFiles=()
     createAgentInstallConfig upgradeConfigFiles
 
     configFileLength=${#upgradeConfigFiles[@]}
-    if [[ $configFileLength -gt 0 ]]; then 
+    if [[ $configFileLength -gt 0 ]]; then
 	    manifestAddTypeStanza myclustermainresult "${myclustermainresult}" "configurationUpgrade" "1.0.0" "${upgradeConfigFiles[@]}"
     fi
 
-    local upgradeCertFiles=()    
+    local upgradeCertFiles=()
     getClusterCert upgradeCertFiles
     certFileLength=${#upgradeCertFiles[@]}
-    if [[ $certFileLength -gt 0 ]]; then 
+    if [[ $certFileLength -gt 0 ]]; then
 	    manifestAddTypeStanza myclustermainresult "${myclustermainresult}" "certificateUpgrade" "1.0.0" "${upgradeCertFiles[@]}"
     fi
 
@@ -1085,7 +1085,7 @@ cluster_main() {
 
     getAgentInstallScript upgradeSoftwareFiles
     softwareFileLength=${#upgradeSoftwareFiles[@]}
-    if [[ $softwareFileLength -gt 0 ]]; then 
+    if [[ $softwareFileLength -gt 0 ]]; then
 	    manifestAddTypeStanza myclustermainresult "${myclustermainresult}" "softwareUpgrade" "${SOFTWARE_PACKAGE_VERSION}" "${upgradeSoftwareFiles[@]}"
     fi
 
@@ -1114,18 +1114,18 @@ device_main() {
 
     cleanUpPreviousFiles
 
-    local upgradeConfigFiles=()    
+    local upgradeConfigFiles=()
     createAgentInstallConfig upgradeConfigFiles
 
     configFileLength=${#upgradeConfigFiles[@]}
-    if [[ $configFileLength -gt 0 ]]; then 
+    if [[ $configFileLength -gt 0 ]]; then
 	    manifestAddTypeStanza mydevicemainresult "${mydevicemainresult}" "configurationUpgrade" "1.0.0" "${upgradeConfigFiles[@]}"
     fi
 
-    local upgradeCertFiles=()    
+    local upgradeCertFiles=()
     getClusterCert upgradeCertFiles
     certFileLength=${#upgradeCertFiles[@]}
-    if [[ $certFileLength -gt 0 ]]; then 
+    if [[ $certFileLength -gt 0 ]]; then
 	    manifestAddTypeStanza mydevicemainresult "${mydevicemainresult}" "certificateUpgrade" "1.0.0" "${upgradeCertFiles[@]}"
     fi
 
@@ -1135,7 +1135,7 @@ device_main() {
     getAgentInstallScript upgradeSoftwareFiles
 
     softwareFileLength=${#upgradeSoftwareFiles[@]}
-    if [[ $softwareFileLength -gt 0 ]]; then 
+    if [[ $softwareFileLength -gt 0 ]]; then
 	    manifestAddTypeStanza mydevicemainresult "${mydevicemainresult}" "softwareUpgrade" "${SOFTWARE_PACKAGE_VERSION}" "${upgradeSoftwareFiles[@]}"
     fi
     echo
@@ -1153,7 +1153,7 @@ device_main() {
 # Publish a manifest for files pushed by this execution
 function publishUpgradeManifest() {
 
-    local upgradeManifest=$1 
+    local upgradeManifest=$1
     local version=$2
 
     local fileName=${MANIFEST_NAME}_$version
